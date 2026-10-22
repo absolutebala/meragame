@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
 import { supabase } from '../lib/supabase';
@@ -307,11 +308,14 @@ export default function ProfileScreen({ navigation }) {
         renderItem={({ item }) => <ActivityMiniCard item={item} />}
         contentContainerStyle={{ paddingBottom: spacing.xxl + 20 }}
         ListFooterComponent={
-          activities.length > 0 && (
-            <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl }}>
+          <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xl, alignItems: 'center', gap: 4 }}>
+            {activities.length > 0 && (
               <Text style={styles.footerNote}>Showing your 5 most recent games</Text>
-            </View>
-          )
+            )}
+            <Text style={styles.buildNote}>
+              v{Constants.expoConfig?.version || '1.0.0'} · build {Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.ios?.buildNumber || '1'}
+            </Text>
+          </View>
         }
       />
 
@@ -444,6 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm, lineHeight: 20,
   },
   footerNote: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, textAlign: 'center' },
+  buildNote: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted + '88', textAlign: 'center' },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: '#000000aa', justifyContent: 'flex-end' },
