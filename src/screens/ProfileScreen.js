@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
@@ -186,14 +185,8 @@ export default function ProfileScreen({ navigation }) {
     <View>
       {/* Cover banner */}
       <View style={styles.coverContainer}>
-        <LinearGradient
-          colors={['#1a2035', '#0f172a', colors.bg]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={styles.cover}
-        />
-        {/* Orange accent line at top */}
+        <View style={styles.cover} />
         <View style={styles.coverAccent} />
-        {/* Subtle sport icons in background */}
         <Text style={styles.coverBg}>🏸  🏏  🏆</Text>
       </View>
 
@@ -334,7 +327,7 @@ const styles = StyleSheet.create({
 
   // Cover
   coverContainer: { height: COVER_H, position: 'relative', overflow: 'hidden' },
-  cover: { ...StyleSheet.absoluteFillObject },
+  cover: { ...StyleSheet.absoluteFillObject, backgroundColor: '#1a2035' },
   coverAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
   coverBg: {
     position: 'absolute', bottom: 12, right: 16,

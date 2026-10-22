@@ -4,7 +4,6 @@ import {
   Alert, ActivityIndicator, Image, Modal, TextInput, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -252,12 +251,7 @@ export default function ClubDetailScreen({ route, navigation }) {
   const Header = (
     <View>
       {/* Cover */}
-      <View style={styles.cover}>
-        <LinearGradient
-          colors={[sportColor + '55', '#0f172a']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+      <View style={[styles.cover, { backgroundColor: sportColor + '22' }]}>
         <View style={[styles.coverAccent, { backgroundColor: sportColor }]} />
         <Text style={styles.coverEmoji}>{SPORT_ICONS[club.sport] || '🏆'}</Text>
       </View>
