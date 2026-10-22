@@ -34,6 +34,22 @@ export function ProfileProvider({ children }) {
 
       if (error && error.code !== 'PGRST116') throw error;
 
+      // Backfill avatar_url from Google metadata for existing users
+      if (data && !data.avatar_url) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const googleAvatar =
+          authUser?.user_metadata?.avatar_url ||
+          authUser?.user_metadata?.picture ||
+          null;
+        if (googleAvatar) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: googleAvatar })
+            .eq('id', userId);
+          data.avatar_url = googleAvatar;
+        }
+      }
+
       setProfile(data);
       setProfileComplete(
         !!(data?.full_name && data?.sports && data.sports.length > 0)
