@@ -393,6 +393,8 @@ export default function LogActivityScreen({ navigation }) {
       if (d.opponent1) d.opponent1 = { id: d.opponent1.id, name: d.opponent1.full_name };
       if (d.opponent2) d.opponent2 = { id: d.opponent2.id, name: d.opponent2.full_name };
       if (d.partner)   d.partner   = { id: d.partner.id,   name: d.partner.full_name };
+      console.log('[buildDetails] badminton state before serialize:', JSON.stringify(badminton));
+      console.log('[buildDetails] serialized details:', JSON.stringify(d));
       return d;
     }
     return { ...cricket };

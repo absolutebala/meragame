@@ -166,6 +166,9 @@ function ActivityCard({ item, navigation }) {
     if (d.overs)       stats.push({ label: 'Overs',   value: d.overs });
   }
 
+  // DEBUG: log full details so we can verify what's saved
+  console.log('[ActivityCard] id:', item.id, 'details:', JSON.stringify(d));
+
   // narrative rendered inline below
   const photos = item.photo_urls || [];
 
