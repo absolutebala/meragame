@@ -5,10 +5,61 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
 import { colors, fonts, spacing, radius } from '../theme';
+
+// Upload a local file URI to Supabase Storage, return public URL
+async function uploadPhotoToStorage(userId, localUri) {
+  try {
+    // Read the file as base64
+    const base64 = await FileSystem.readAsStringAsync(localUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    // Determine mime type from extension
+    const ext = localUri.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+    const fileName = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+    // Upload to Supabase Storage bucket 'activity-photos'
+    const { error } = await supabase.storage
+      .from('activity-photos')
+      .upload(fileName, decode(base64), {
+        contentType: mimeType,
+        upsert: false,
+      });
+    if (error) throw error;
+
+    // Get public URL
+    const { data } = supabase.storage.from('activity-photos').getPublicUrl(fileName);
+    return data.publicUrl;
+  } catch (err) {
+    console.warn('Photo upload failed:', err.message);
+    return null;
+  }
+}
+
+// base64 decode to Uint8Array (no atob in React Native)
+function decode(base64) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let bufLen = Math.floor((base64.length * 3) / 4);
+  if (base64[base64.length - 1] === '=') bufLen--;
+  if (base64[base64.length - 2] === '=') bufLen--;
+  const buf = new Uint8Array(bufLen);
+  let i = 0, j = 0;
+  while (i < base64.length) {
+    const a = chars.indexOf(base64[i++]);
+    const b = chars.indexOf(base64[i++]);
+    const c = chars.indexOf(base64[i++]);
+    const d = chars.indexOf(base64[i++]);
+    buf[j++] = (a << 2) | (b >> 4);
+    if (j < bufLen) buf[j++] = ((b & 0xf) << 4) | (c >> 2);
+    if (j < bufLen) buf[j++] = ((c & 0x3) << 6) | d;
+  }
+  return buf;
+}
 
 const SPORT_META = {
   badminton: { label: 'Badminton', color: colors.badminton },
@@ -352,12 +403,23 @@ export default function LogActivityScreen({ navigation }) {
     if (!data.result) return Alert.alert('Result required', 'Please select Won, Lost, or Draw.');
     try {
       setLoading(true);
+
+      // Upload photos to Supabase Storage first
+      let uploadedUrls = null;
+      if (photos.length > 0) {
+        const uploads = await Promise.all(
+          photos.map(uri => uploadPhotoToStorage(user.id, uri))
+        );
+        const successfulUrls = uploads.filter(Boolean);
+        if (successfulUrls.length > 0) uploadedUrls = successfulUrls;
+      }
+
       const { error } = await supabase.from('activities').insert({
         user_id: user.id,
         sport,
         details: buildDetails(),
         notes: notes.trim() || null,
-        photo_urls: photos.length > 0 ? photos : null,
+        photo_urls: uploadedUrls,
         club_id: club?.id || null,
       });
       if (error) throw error;

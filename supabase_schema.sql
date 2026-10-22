@@ -172,6 +172,33 @@ CREATE POLICY "Users can manage own follows"
   ON public.follows FOR ALL USING (auth.uid() = follower_id);
 
 -- ============================================================
+-- STORAGE: activity-photos bucket
+-- Run this in Supabase Dashboard > Storage (or SQL editor)
+-- ============================================================
+-- Create bucket (do this in the Storage UI or via SQL below)
+-- INSERT INTO storage.buckets (id, name, public)
+-- VALUES ('activity-photos', 'activity-photos', true)
+-- ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload their own photos
+CREATE POLICY "Users can upload activity photos"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'activity-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Allow public read of all activity photos
+CREATE POLICY "Activity photos are publicly readable"
+  ON storage.objects FOR SELECT
+  TO public
+  USING (bucket_id = 'activity-photos');
+
+-- Allow users to delete their own photos
+CREATE POLICY "Users can delete own activity photos"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'activity-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ============================================================
 -- REACTIONS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.reactions (
