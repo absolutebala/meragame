@@ -4,6 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { ProfileProvider } from './src/context/ProfileContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import BuildFooter from './src/components/BuildFooter';
 import { colors } from './src/theme';
 
 export default function App() {
@@ -25,7 +26,12 @@ export default function App() {
   return (
     <AuthProvider>
       <ProfileProvider>
-        <RootNavigator />
+        <View style={{ flex: 1, backgroundColor: colors.bg }}>
+          <View style={{ flex: 1 }}>
+            <RootNavigator />
+          </View>
+          <BuildFooter />
+        </View>
       </ProfileProvider>
     </AuthProvider>
   );
