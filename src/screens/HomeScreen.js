@@ -93,30 +93,37 @@ function buildNarrativeParts(posterName, sport, d) {
   // Returns array of {text, isLink, playerId} segments, or null if nothing to show
   if (sport !== 'badminton') return null;
 
-  const playerName = (p) => p?.name || p?.full_name || null;
+  // Support both new schema (opponent1 object) and old schema (opponent plain string)
+  const playerName = (p) => {
+    if (!p) return null;
+    if (typeof p === 'string') return p;
+    return p.name || p.full_name || null;
+  };
+  const playerId = (p) => (p && typeof p === 'object') ? p.id : null;
 
   const segments = [];
-
-  // Start with poster
   segments.push({ text: posterName, bold: true });
 
-  if (d.format === 'Doubles' && d.partner && playerName(d.partner)) {
+  // Partner — new schema only (old logs had no partner field)
+  if (d.partner && playerName(d.partner)) {
     segments.push({ text: ' partnering with ' });
-    segments.push({ text: playerName(d.partner), isLink: true, playerId: d.partner.id });
+    segments.push({ text: playerName(d.partner), isLink: true, playerId: playerId(d.partner) });
   }
 
-  const opp1 = playerName(d.opponent1);
-  const opp2 = playerName(d.opponent2);
+  // Opponents — new schema: opponent1/opponent2 objects; old schema: opponent string
+  const opp1Name = playerName(d.opponent1) || playerName(d.opponent);
+  const opp1Id   = playerId(d.opponent1);
+  const opp2Name = playerName(d.opponent2);
+  const opp2Id   = playerId(d.opponent2);
 
-  if (opp1) {
+  if (opp1Name) {
     segments.push({ text: ' played against ' });
-    segments.push({ text: opp1, isLink: true, playerId: d.opponent1?.id });
-    if (opp2) {
+    segments.push({ text: opp1Name, isLink: !!opp1Id, playerId: opp1Id });
+    if (opp2Name) {
       segments.push({ text: ' and ' });
-      segments.push({ text: opp2, isLink: true, playerId: d.opponent2?.id });
+      segments.push({ text: opp2Name, isLink: !!opp2Id, playerId: opp2Id });
     }
   } else {
-    // No opponents tagged — nothing interesting to show
     return null;
   }
 
@@ -156,9 +163,12 @@ function ActivityCard({ item, navigation }) {
 
   const stats = [];
   if (item.sport === 'badminton') {
-    if (d.format)      stats.push({ label: 'Format',     value: d.format });
-    if (d.games_won != null && d.games_won !== '')  stats.push({ label: 'Won',  value: d.games_won });
-    if (d.games_lost != null && d.games_lost !== '') stats.push({ label: 'Lost', value: d.games_lost });
+    if (d.format)      stats.push({ label: 'Format', value: d.format });
+    // New schema: games_won / games_lost — Old schema: my_score / opp_score
+    const won  = d.games_won  ?? d.my_score;
+    const lost = d.games_lost ?? d.opp_score;
+    if (won  != null && won  !== '') stats.push({ label: 'My Score',  value: won });
+    if (lost != null && lost !== '') stats.push({ label: 'Opp Score', value: lost });
   } else if (item.sport === 'cricket') {
     if (d.runs)        stats.push({ label: 'Runs',    value: d.runs });
     if (d.wickets)     stats.push({ label: 'Wkts',    value: d.wickets });
