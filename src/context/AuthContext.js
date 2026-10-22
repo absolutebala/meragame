@@ -40,6 +40,7 @@ export function AuthProvider({ children }) {
       options: {
         redirectTo: REDIRECT_URL,
         skipBrowserRedirect: true,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
 
@@ -47,10 +48,33 @@ export function AuthProvider({ children }) {
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, REDIRECT_URL);
 
-    if (result.type === 'success' && result.url) {
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.url);
-      if (exchangeError) throw exchangeError;
+    if (result.type !== 'success' || !result.url) {
+      // User cancelled or browser failed — not an error
+      return;
     }
+
+    // Parse the returned URL to confirm code is present
+    const url = new URL(result.url);
+    const code = url.searchParams.get('code');
+
+    if (!code) {
+      // Sometimes the URL comes back as a hash fragment (implicit flow fallback)
+      const hashParams = new URLSearchParams(url.hash.replace('#', ''));
+      const accessToken = hashParams.get('access_token');
+      if (accessToken) {
+        // Implicit token — set session directly
+        const { error: setErr } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get('refresh_token') || '',
+        });
+        if (setErr) throw setErr;
+        return;
+      }
+      throw new Error('No auth code returned. Check your Supabase redirect URL matches: ' + REDIRECT_URL);
+    }
+
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.url);
+    if (exchangeError) throw exchangeError;
   };
 
   const signOut = async () => {
