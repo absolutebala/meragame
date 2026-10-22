@@ -38,6 +38,67 @@ function PillSelector({ options, value, onChange, color }) {
   );
 }
 
+// ── Club search input ──────────────────────────────────────────
+function ClubSearchInput({ sport, value, onChange }) {
+  const [query, setQuery] = useState(value?.name || '');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  const search = async (text) => {
+    setQuery(text);
+    onChange(null);
+    if (text.length < 1) { setResults([]); return; }
+    setSearching(true);
+    const q = supabase.from('clubs').select('id, name, sport').ilike('name', `%${text}%`).limit(6);
+    if (sport) q.eq('sport', sport);
+    const { data } = await q;
+    setResults(data || []);
+    setSearching(false);
+  };
+
+  const select = (club) => {
+    setQuery(club.name);
+    setResults([]);
+    onChange(club);
+  };
+
+  return (
+    <View style={styles.tagWrap}>
+      <Text style={styles.fieldLabel}>Club (optional)</Text>
+      <View style={styles.tagInputRow}>
+        {value ? (
+          <View style={styles.tagChip}>
+            <Ionicons name="people-outline" size={16} color={colors.primary} />
+            <Text style={styles.tagName}>{value.name}</Text>
+            <TouchableOpacity onPress={() => { onChange(null); setQuery(''); }}>
+              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TextInput
+            style={styles.tagInput}
+            value={query}
+            onChangeText={search}
+            placeholder="Search or type club name..."
+            placeholderTextColor={colors.textMuted}
+          />
+        )}
+        {searching && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />}
+      </View>
+      {results.length > 0 && (
+        <View style={styles.dropdown}>
+          {results.map(c => (
+            <TouchableOpacity key={c.id} style={styles.dropdownItem} onPress={() => select(c)}>
+              <Ionicons name="people-outline" size={16} color={colors.textMuted} />
+              <Text style={styles.dropdownName}>{c.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ── Player tag search ──────────────────────────────────────────
 function PlayerTagInput({ label, value, onChange, placeholder }) {
   const [query, setQuery] = useState(value?.full_name || '');
@@ -232,6 +293,7 @@ export default function LogActivityScreen({ navigation }) {
   const [cricket, setCricket] = useState(DEFAULT_CRICKET);
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [club, setClub] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Keep sport in sync if profile loads after mount
@@ -296,6 +358,7 @@ export default function LogActivityScreen({ navigation }) {
         details: buildDetails(),
         notes: notes.trim() || null,
         photo_urls: photos.length > 0 ? photos : null,
+        club_id: club?.id || null,
       });
       if (error) throw error;
       // Reset
@@ -303,6 +366,7 @@ export default function LogActivityScreen({ navigation }) {
       setCricket(DEFAULT_CRICKET);
       setNotes('');
       setPhotos([]);
+      setClub(null);
       // Navigate to Feed
       navigation.navigate('Feed');
     } catch (e) {
@@ -345,6 +409,9 @@ export default function LogActivityScreen({ navigation }) {
             ? <BadmintonForm data={badminton} onChange={handleChange(setBadminton)} />
             : <CricketForm data={cricket} onChange={handleChange(setCricket)} />
           }
+
+          {/* Club */}
+          <ClubSearchInput sport={sport} value={club} onChange={setClub} />
 
           {/* Notes */}
           <View style={styles.fieldGroup}>

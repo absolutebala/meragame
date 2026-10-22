@@ -63,8 +63,14 @@ CREATE TABLE IF NOT EXISTS public.activities (
   sport       TEXT NOT NULL,
   details     JSONB DEFAULT '{}',
   notes       TEXT,
+  photo_urls  TEXT[] DEFAULT NULL,
+  club_id     UUID REFERENCES public.clubs(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- If the table already exists, add columns with:
+-- ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS photo_urls TEXT[] DEFAULT NULL;
+-- ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS club_id UUID REFERENCES public.clubs(id) ON DELETE SET NULL;
 
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 

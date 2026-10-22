@@ -48,6 +48,7 @@ function ActivityCard({ item }) {
   const sportColor = SPORT_COLOR[item.sport] || colors.primary;
   const d = item.details || {};
   const poster = item.profiles;
+  const club = item.clubs;
   const timeAgo = getTimeAgo(item.created_at);
 
   const stats = [];
@@ -74,6 +75,12 @@ function ActivityCard({ item }) {
             <View style={[styles.sportTag, { borderColor: sportColor }]}>
               <Text style={[styles.sportTagText, { color: sportColor }]}>{item.sport}</Text>
             </View>
+            {club && (
+              <View style={styles.clubTag}>
+                <Ionicons name="people-outline" size={10} color={colors.textMuted} />
+                <Text style={styles.clubTagText}>{club.name}</Text>
+              </View>
+            )}
             <Text style={styles.timeAgo}>{timeAgo}</Text>
           </View>
         </View>
@@ -137,7 +144,7 @@ export default function HomeScreen() {
     try {
       let query = supabase
         .from('activities')
-        .select('*, profiles(full_name, avatar_url)')
+        .select('*, profiles(full_name, avatar_url), clubs(name)')
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -244,6 +251,8 @@ const styles = StyleSheet.create({
   },
   sportTagText: { fontFamily: fonts.medium, fontSize: 11, textTransform: 'capitalize' },
   timeAgo: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
+  clubTag: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.bgInput, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 2 },
+  clubTagText: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   resultBadge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm },
   resultText: { fontFamily: fonts.bold, fontSize: 13 },
   notes: { fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
