@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import LogActivityScreen from '../screens/LogActivityScreen';
 import ClubsScreen from '../screens/ClubsScreen';
 import CreateClubScreen from '../screens/CreateClubScreen';
+import ClubDetailScreen from '../screens/ClubDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -17,6 +18,7 @@ function ClubsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ClubsList" component={ClubsScreen} />
       <Stack.Screen name="CreateClub" component={CreateClubScreen} />
+      <Stack.Screen name="ClubDetail" component={ClubDetailScreen} />
     </Stack.Navigator>
   );
 }

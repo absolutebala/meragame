@@ -108,6 +108,52 @@ CREATE POLICY "Authenticated users can create clubs"
   ON public.clubs FOR INSERT WITH CHECK (auth.uid() = created_by);
 
 -- ============================================================
+-- CLUB MEMBERS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.club_members (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  club_id     UUID NOT NULL REFERENCES public.clubs(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin','member')),
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(club_id, user_id)
+);
+
+ALTER TABLE public.club_members ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Club members are publicly readable"
+  ON public.club_members FOR SELECT USING (true);
+
+CREATE POLICY "Users can join clubs"
+  ON public.club_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage club members"
+  ON public.club_members FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.club_members cm
+      WHERE cm.club_id = club_members.club_id
+        AND cm.user_id = auth.uid()
+        AND cm.role = 'admin'
+    )
+  );
+
+-- Auto-add club creator as admin
+CREATE OR REPLACE FUNCTION public.handle_new_club()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.club_members (club_id, user_id, role)
+  VALUES (NEW.id, NEW.created_by, 'admin')
+  ON CONFLICT (club_id, user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_club_created ON public.clubs;
+CREATE TRIGGER on_club_created
+  AFTER INSERT ON public.clubs
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_club();
+
+-- ============================================================
 -- FOLLOWS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.follows (

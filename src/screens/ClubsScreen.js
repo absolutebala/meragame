@@ -9,10 +9,10 @@ import { colors, fonts, spacing, radius } from '../theme';
 
 const SPORT_COLOR = { badminton: colors.badminton, cricket: colors.cricket };
 
-function ClubCard({ club }) {
+function ClubCard({ club, onPress }) {
   const sportColor = SPORT_COLOR[club.sport] || colors.primary;
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.cardTop}>
         <View style={[styles.sportDot, { backgroundColor: sportColor }]} />
         <View style={{ flex: 1 }}>
@@ -25,11 +25,14 @@ function ClubCard({ club }) {
       </View>
       <View style={styles.cardFooter}>
         <Text style={styles.sportTag}>{club.sport}</Text>
-        <Text style={styles.memberCount}>
-          {new Date(club.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-        </Text>
+        <View style={styles.cardFooterRight}>
+          <Text style={styles.memberCount}>
+            {new Date(club.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -79,7 +82,12 @@ export default function ClubsScreen({ navigation }) {
         <FlatList
           data={clubs}
           keyExtractor={item => item.id}
-          renderItem={({ item }) => <ClubCard club={item} />}
+          renderItem={({ item }) => (
+              <ClubCard
+                club={item}
+                onPress={() => navigation.navigate('ClubDetail', { clubId: item.id })}
+              />
+            )}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
@@ -118,6 +126,7 @@ const styles = StyleSheet.create({
   clubName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.text },
   clubDesc: { fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sportTag: { fontFamily: fonts.medium, fontSize: 12, color: colors.textMuted, textTransform: 'capitalize' },
   memberCount: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md, padding: spacing.xl },
