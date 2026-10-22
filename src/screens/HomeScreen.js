@@ -89,50 +89,60 @@ function PhotoLightbox({ urls, initialIndex, onClose }) {
 }
 
 // ── Build narrative sentence ─────────────────────────────────────
-function buildNarrative(posterName, sport, d, navigation) {
+function buildNarrativeParts(posterName, sport, d) {
+  // Returns array of {text, isLink, playerId} segments, or null if nothing to show
   if (sport !== 'badminton') return null;
-  const parts = [];
 
-  const makeLink = (player, key) => {
-    if (!player) return null;
-    return (
-      <Text
-        key={key}
-        style={styles.narrativeLink}
-        onPress={() => player.id && navigation?.navigate('PlayerProfile', { userId: player.id })}
-      >
-        {player.name || player.full_name}
-      </Text>
-    );
-  };
+  const playerName = (p) => p?.name || p?.full_name || null;
 
-  // "Bala partnering with Ganesan played against Rajesh and Sarvesh"
-  // or "Bala played against Rajesh" (singles)
-  if (d.format === 'Doubles' && d.partner) {
-    return (
-      <Text style={styles.narrative}>
-        <Text style={styles.narrativeName}>{posterName}</Text>
-        {' partnering with '}
-        {makeLink(d.partner, 'partner')}
-        {' played against '}
-        {makeLink(d.opponent1, 'opp1')}
-        {d.opponent2 ? <Text>{' and '}</Text> : null}
-        {d.opponent2 ? makeLink(d.opponent2, 'opp2') : null}
-      </Text>
-    );
+  const segments = [];
+
+  // Start with poster
+  segments.push({ text: posterName, bold: true });
+
+  if (d.format === 'Doubles' && d.partner && playerName(d.partner)) {
+    segments.push({ text: ' partnering with ' });
+    segments.push({ text: playerName(d.partner), isLink: true, playerId: d.partner.id });
   }
-  if (d.opponent1) {
-    return (
-      <Text style={styles.narrative}>
-        <Text style={styles.narrativeName}>{posterName}</Text>
-        {' played against '}
-        {makeLink(d.opponent1, 'opp1')}
-        {d.opponent2 ? <Text>{' and '}</Text> : null}
-        {d.opponent2 ? makeLink(d.opponent2, 'opp2') : null}
-      </Text>
-    );
+
+  const opp1 = playerName(d.opponent1);
+  const opp2 = playerName(d.opponent2);
+
+  if (opp1) {
+    segments.push({ text: ' played against ' });
+    segments.push({ text: opp1, isLink: true, playerId: d.opponent1?.id });
+    if (opp2) {
+      segments.push({ text: ' and ' });
+      segments.push({ text: opp2, isLink: true, playerId: d.opponent2?.id });
+    }
+  } else {
+    // No opponents tagged — nothing interesting to show
+    return null;
   }
-  return null;
+
+  return segments;
+}
+
+function NarrativeRow({ posterName, sport, d, navigation }) {
+  const segments = buildNarrativeParts(posterName, sport, d);
+  if (!segments) return null;
+  return (
+    <Text style={styles.narrative}>
+      {segments.map((seg, i) => (
+        <Text
+          key={i}
+          style={[
+            seg.bold ? styles.narrativeName : seg.isLink ? styles.narrativeLink : styles.narrativeText,
+          ]}
+          onPress={seg.isLink && seg.playerId
+            ? () => navigation?.navigate('PlayerProfile', { userId: seg.playerId })
+            : undefined}
+        >
+          {seg.text}
+        </Text>
+      ))}
+    </Text>
+  );
 }
 
 // ── Activity card ────────────────────────────────────────────────
@@ -156,7 +166,7 @@ function ActivityCard({ item, navigation }) {
     if (d.overs)       stats.push({ label: 'Overs',   value: d.overs });
   }
 
-  const narrative = buildNarrative(poster?.full_name || 'Player', item.sport, d, navigation);
+  // narrative rendered inline below
   const photos = item.photo_urls || [];
 
   return (
@@ -188,7 +198,12 @@ function ActivityCard({ item, navigation }) {
       </View>
 
       {/* Narrative sentence */}
-      {narrative}
+      <NarrativeRow
+        posterName={poster?.full_name || 'Player'}
+        sport={item.sport}
+        d={d}
+        navigation={navigation}
+      />
 
       {/* Stats row */}
       {stats.length > 0 && (
@@ -407,9 +422,10 @@ const styles = StyleSheet.create({
   resultBadge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm },
   resultText: { fontFamily: fonts.bold, fontSize: 13 },
   // Narrative
-  narrative: { fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
+  narrative: { fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 4 },
   narrativeName: { fontFamily: fonts.semiBold, color: colors.text },
   narrativeLink: { fontFamily: fonts.semiBold, color: colors.primary },
+  narrativeText: { fontFamily: fonts.regular, color: colors.textSecondary },
   notes: { fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   statPill: { backgroundColor: colors.bgInput, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, alignItems: 'center', minWidth: 56 },
